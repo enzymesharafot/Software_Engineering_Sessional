@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarmaDetect - AI Skin Disease Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #334155;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0f766e;
+        }
+
+        .logo::before {
+            content: "🩺";
+            font-size: 1.25rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #64748b;
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #0f766e;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            margin: 3rem 0;
+        }
+
+        .upload-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-box:hover {
+            border-color: #0f766e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(15, 118, 110, 0.1);
+        }
+
+        .upload-box.dragover {
+            border-color: #0f766e;
+            background: #f0fdfa;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.125rem;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            margin-top: 2rem;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .image-preview.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Analyze Button */
+        .analyze-btn {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .analyze-btn:hover {
+            background: #0d9488;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Analysis Section */
+        .analysis-section {
+            text-align: center;
+            margin: 3rem 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease;
+        }
+
+        .analysis-section.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        .progress-circle {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 4;
+        }
+
+        .progress-bg {
+            stroke: #e2e8f0;
+        }
+
+        .progress-fill {
+            stroke: #0f766e;
+            stroke-linecap: round;
+            stroke-dasharray: 314;
+            stroke-dashoffset: 314;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .analysis-text {
+            font-size: 1.125rem;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .analysis-subtext {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        /* Result Card */
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin: 3rem 0;
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+            transition: all 0.5s ease;
+        }
+
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence-score {
+            font-size: 1.125rem;
+            color: #0f766e;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .consult-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+        }
+
+        .consult-btn:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .new-analysis-btn {
+            background: transparent;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .new-analysis-btn:hover {
+            border-color: #0f766e;
+            color: #0f766e;
+        }
+
+        /* About Section */
+        .about-section {
+            padding: 4rem 0;
+            background: white;
+            border-radius: 20px;
+            margin: 4rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: #64748b;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 2rem 1.5rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            padding: 4rem 0;
+            background: white;
+            border-radius: 20px;
+            margin: 4rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .contact-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 3rem;
+            padding: 0 2rem;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .contact-item {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background: #f0fdfa;
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(15, 118, 110, 0.1);
+        }
+
+        .contact-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-item h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0f766e;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-item p {
+            color: #64748b;
+        }
+
+        .contact-form {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0f766e;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            background: #0f766e;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background: #0d9488;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: #64748b;
+            font-size: 0.875rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #0f766e;
+        }
+
+        .copyright {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav {
+                padding: 0 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero {
+                padding: 2rem 0;
+            }
+
+            .upload-box {
+                padding: 2rem 1rem;
+            }
+
+            .result-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                padding: 0 1rem;
+            }
+
+            .contact-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 0 1rem;
+            }
+
+            .section-header h2 {
+                font-size: 1.75rem;
+            }
+
+            .about-section,
+            .contact-section {
+                margin: 3rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">DarmaDetect</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#upload">Upload</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Detect Skin Conditions with AI Precision</h1>
+            <p>Upload an image of your skin concern and get instant AI-powered analysis. Fast, accurate, and reliable dermatological screening.</p>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="upload-section" id="upload">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drop your image here or click to upload</div>
+                <div class="upload-subtext">Supports JPG, PNG files up to 10MB</div>
+                <input type="file" class="file-input" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="image-preview" id="imagePreview">
+                <img class="preview-image" id="previewImage" alt="Preview">
+                <br>
+                <button class="analyze-btn" id="analyzeBtn">Analyze Image</button>
+            </div>
+        </section>
+
+        <!-- Analysis Section -->
+        <section class="analysis-section" id="analysisSection">
+            <div class="progress-ring">
+                <svg class="progress-circle" viewBox="0 0 100 100">
+                    <circle class="progress-bg" cx="50" cy="50" r="45"></circle>
+                    <circle class="progress-fill" cx="50" cy="50" r="45" id="progressFill"></circle>
+                </svg>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+            <div class="analysis-text">Analyzing your skin...</div>
+            <div class="analysis-subtext">This may take a few seconds</div>
+        </section>
+
+        <!-- Result Section -->
+        <section class="result-card" id="resultCard">
+            <div class="result-icon" id="resultIcon">🔍</div>
+            <div class="result-title" id="resultTitle">Analysis Complete</div>
+            <div class="confidence-score" id="confidenceScore">Confidence: 87%</div>
+            <button class="consult-btn">Consult a Dermatologist</button>
+            <button class="new-analysis-btn" id="newAnalysisBtn">New Analysis</button>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section" id="about">
+            <div class="section-header">
+                <h2>About DarmaDetect</h2>
+                <p>Advanced AI technology for early skin condition detection</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Our advanced machine learning algorithms analyze skin images with high accuracy, trained on thousands of dermatological cases.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Instant Results</h3>
+                    <p>Get preliminary analysis results in seconds, helping you make informed decisions about your skin health quickly.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Privacy First</h3>
+                    <p>Your images and data are processed securely and never stored on our servers. Complete privacy guaranteed.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍⚕️</div>
+                    <h3>Professional Support</h3>
+                    <p>Our AI screening is designed to complement professional dermatological care, not replace it.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact-section" id="contact">
+            <div class="section-header">
+                <h2>Get in Touch</h2>
+                <p>Have questions? We're here to help you understand your skin health better</p>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <h3>Email Support</h3>
+                        <p>support@darmadetect.com</p>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">🏥</div>
+                        <h3>Medical Inquiries</h3>
+                        <p>medical@darmadetect.com</p>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">💬</div>
+                        <h3>Live Chat</h3>
+                        <p>Available 24/7 for immediate assistance</p>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <form>
+                        <div class="form-group">
+                            <input type="text" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <select required>
+                                <option value="">Select Subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="medical">Medical Question</option>
+                                <option value="partnership">Partnership</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Your Message" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#privacy">Privacy Policy</a>
+            <a href="#terms">Terms of Service</a>
+            <a href="#help">Help Center</a>
+            <a href="#contact">Contact Us</a>
+        </div>
+        <div class="copyright">© 2025 DarmaDetect. All rights reserved.</div>
+    </footer>
+
+    <script>
+        // DOM elements
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const analysisSection = document.getElementById('analysisSection');
+        const resultCard = document.getElementById('resultCard');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultIcon = document.getElementById('resultIcon');
+        const confidenceScore = document.getElementById('confidenceScore');
+        const newAnalysisBtn = document.getElementById('newAnalysisBtn');
+
+        // Map backend class names to display names with icons
+        const conditionMapping = {
+            'BA-cellulitis': { name: 'Cellulitis Detected', icon: '🔴' },
+            'BA-impetigo': { name: 'Impetigo Detected', icon: '🟠' },
+            'FU-athlete-foot': { name: 'Athlete\'s Foot Detected', icon: '🟡' },
+            'FU-nail-fungus': { name: 'Nail Fungus Detected', icon: '🟢' },
+            'FU-ringworm': { name: 'Ringworm Detected', icon: '🔵' },
+            'PA-cutaneous-larva-migrans': { name: 'Cutaneous Larva Migrans Detected', icon: '🟤' },
+            'VI-chickenpox': { name: 'Chickenpox Detected', icon: '⚪' },
+            'VI-shingles': { name: 'Shingles Detected', icon: '⚫' }
+        };
+
+        // Upload box click handler
+        uploadBox.addEventListener('click', () => fileInput.click());
+
+        // File input change handler
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop handlers
+        uploadBox.addEventListener('dragover', handleDragOver);
+        uploadBox.addEventListener('dragleave', handleDragLeave);
+        uploadBox.addEventListener('drop', handleDrop);
+
+        // Analyze button handler
+        analyzeBtn.addEventListener('click', startAnalysis);
+
+        // New analysis button handler
+        newAnalysisBtn.addEventListener('click', resetAnalysis);
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Contact form submission
+        document.querySelector('.contact-form form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(e.target);
+            const submitBtn = e.target.querySelector('.submit-btn');
+            
+            // Show loading state
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Sending...';
+            submitBtn.disabled = true;
+            
+            // Simulate form submission
+            setTimeout(() => {
+                submitBtn.textContent = 'Message Sent! ✓';
+                submitBtn.style.background = '#059669';
+                
+                // Reset form
+                setTimeout(() => {
+                    e.target.reset();
+                    submitBtn.textContent = originalText;
+                    submitBtn.style.background = '#0f766e';
+                    submitBtn.disabled = false;
+                }, 2000);
+            }, 1500);
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                displayImage(file);
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                displayImage(file);
+            }
+        }
+
+        function displayImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                imagePreview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function startAnalysis() {
+            // Hide previous sections
+            imagePreview.classList.remove('show');
+            resultCard.classList.remove('show');
+            
+            // Show analysis section
+            analysisSection.classList.add('show');
+            
+            // Get the selected file
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an image first');
+                analysisSection.classList.remove('show');
+                imagePreview.classList.add('show');
+                return;
+            }
+
+            // Start progress animation
+            animateProgress(file);
+        }
+
+        async function animateProgress(file) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 8 + 2;
+                if (progress > 100) progress = 100;
+                
+                const circumference = 2 * Math.PI * 45;
+                const offset = circumference - (progress / 100) * circumference;
+                
+                progressFill.style.strokeDashoffset = offset;
+                progressText.textContent = Math.floor(progress) + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => showResults(file), 500);
+                }
+            }, 100);
+        }
+
+        async function showResults(file) {
+            try {
+                // Create form data with the image
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Send request to backend
+                const response = await fetch('http://localhost:8000/prediction/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                // Hide analysis section
+                analysisSection.classList.remove('show');
+
+                if (result.error) {
+                    resultTitle.textContent = 'Error';
+                    resultIcon.textContent = '❌';
+                    confidenceScore.textContent = 'Error: Failed to process image';
+                    resultCard.classList.add('show');
+                    return;
+                }
+
+                // Get display information from mapping
+                const condition = conditionMapping[result['Predicted Disease'].replace(' ', '')] || {
+                    name: result['Predicted Disease'],
+                    icon: 'ℹ️'
+                };
+
+                // Show results with backend confidence
+                resultTitle.textContent = condition.name;
+                resultIcon.textContent = condition.icon;
+                confidenceScore.textContent = `Confidence: ${result.Confidence}%`;
+                
+                setTimeout(() => {
+                    resultCard.classList.add('show');
+                }, 300);
+
+            } catch (error) {
+                console.error('Prediction error:', error);
+                analysisSection.classList.remove('show');
+                resultTitle.textContent = 'Error';
+                resultIcon.textContent = '❌';
+                confidenceScore.textContent = 'Error: Failed to connect to server';
+                resultCard.classList.add('show');
+            }
+        }
+
+        function resetAnalysis() {
+            // Reset all sections
+            resultCard.classList.remove('show');
+            analysisSection.classList.remove('show');
+            imagePreview.classList.remove('show');
+            
+            // Reset form
+            fileInput.value = '';
+            previewImage.src = '';
+            
+            // Reset progress
+            progressFill.style.strokeDashoffset = 314;
+            progressText.textContent = '0%';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
